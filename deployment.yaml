@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: krakenddemo
+  namespace: krakenddemo-namespace
+  labels:
+    app: krakenddemo
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: krakenddemo
+  template:
+    metadata:
+      annotations:
+        configmap.reloader.stakater.com/reload: "krakend-demo-config"
+      labels:
+        app: krakenddemo
+    spec:
+      containers:
+      - name: krakend-container
+        image: krakend/krakend-ee:watch
+        ports:
+        - containerPort: 8082
+        args:
+        - run
+        - -c
+        - /etc/krakend/config/krakend.json
+        env:
+        - name: KRAKEND_LICENSE_PATH
+          value: /etc/krakend/config/LICENSE
+        volumeMounts:
+        - name: krakend-config
+          mountPath: /etc/krakend/config/krakend.json
+          subPath: krakend.json
+        - name: krakend-license
+          mountPath: /etc/krakend/config/LICENSE
+          subPath: LICENSE
+      volumes:
+      - name: krakend-config
+        configMap:
+          name: krakend-demo-config
+      - name: krakend-license
+        secret:
+          secretName: krakend-license
